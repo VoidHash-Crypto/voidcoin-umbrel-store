@@ -70,6 +70,7 @@ services:
       DB_PASSWORD: moneyprintergobrrr
       DB_NAME: forgepool
       INTERNAL_API_TOKEN: "31544b74955d2def57570ecf68d95113a0260cda15dc04ec3c55336a4c0c98de"
+      ZMQ_ENDPOINT: tcp://127.0.0.1:28332
 
   node:
     image: ghcr.io/bitcoincashii/forge-pool-node:latest
@@ -77,6 +78,7 @@ services:
     stop_grace_period: 1m
     ports:
       - "127.0.0.1:8342:8342"
+      - "127.0.0.1:28332:28332"
       - "8339:8339"
     volumes:
       - ${APP_DATA_DIR}/node:/root/.bch2
@@ -88,6 +90,7 @@ services:
       - -rpcallowip=0.0.0.0/0
       - -rpcuser=umbrel
       - -rpcpassword=moneyprintergobrrr
+      - -zmqpubhashblock=tcp://0.0.0.0:28332
 
   postgres:
     image: postgres:15-alpine
