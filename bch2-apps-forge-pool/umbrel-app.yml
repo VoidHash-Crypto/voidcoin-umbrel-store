@@ -4,7 +4,7 @@ name: Forge Pool
 tagline: Self-hosted BCH2 mining pool
 icon: https://raw.githubusercontent.com/BitcoincashII/BCH2-Graphics/main/bch2_logo.png
 category: bitcoin
-version: "1.1.4"
+version: "1.1.5"
 port: 3334
 description: >-
   Run your own BCH2 mining pool with a single click.
@@ -18,9 +18,9 @@ support: https://github.com/BitcoincashII/forge-pool-umbrel/issues
 gallery:
   - https://raw.githubusercontent.com/BitcoincashII/BCH2-Graphics/main/bch2_logo.png
 releaseNotes: >-
-  HOTFIX: Restore database connectivity for existing installations.
-  - Reverts password changes that broke existing postgres databases
-  - Shares and blocks will now be saved correctly
+  Add ZMQ for instant block notifications.
+  - Stratum now receives new blocks instantly via ZMQ
+  - Faster job updates for miners
 dependencies: []
 path: ""
 defaultUsername: ""
