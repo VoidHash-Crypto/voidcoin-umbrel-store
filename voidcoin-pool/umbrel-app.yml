@@ -2,7 +2,7 @@ manifestVersion: 1
 id: voidcoin-pool
 name: Void Pool
 tagline: Self-hosted VoidCoin mining pool
-icon: https://www.void-coin.net/assets/favicon-192.png
+icon: https://www.void-coin.net/assets/voidcoin-logo.png
 category: bitcoin
 version: "1.0.0"
 port: 3080
