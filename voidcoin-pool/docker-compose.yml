@@ -83,6 +83,12 @@ services:
       - RPC_PASSWORD=voidpoolrpc2024
       - POOL_FEE=1.0
       - ZMQ_ENDPOINT=tcp://node:28332
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=voidpool
+      - DB_PASSWORD=voidpooldb2024
+      - DB_NAME=voidpool
+      - POOL_ADDRESS=${POOL_ADDRESS:-}
     networks:
       - voidcoin_pool
 
