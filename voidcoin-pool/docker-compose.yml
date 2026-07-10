@@ -1,20 +1,11 @@
 version: "3.7"
-
-x-images:
-  node: &node-image ghcr.io/voidhash-crypto/voidcoin-pool-node:${VERSION:-latest}
-  api: &api-image ghcr.io/voidhash-crypto/voidcoin-pool-api:${VERSION:-latest}
-  stratum: &stratum-image ghcr.io/voidhash-crypto/voidcoin-pool-stratum:${VERSION:-latest}
-  web: &web-image ghcr.io/voidhash-crypto/voidcoin-pool-web:${VERSION:-latest}
-
 services:
   node:
-    image: *node-image
-    container_name: void-node
+    image: ghcr.io/voidhash-crypto/voidcoin-pool-node:latest
+    container_name: voidcoin-pool-node
     restart: unless-stopped
     volumes:
-      - ${APP_DATA_DIR:-./data}/node:/root/.voidcoin
-    environment:
-      - RPC_PASSWORD=${NODE_RPC_PASSWORD:-changeme}
+      - ${APP_DATA_DIR}/node:/root/.voidcoin
     command:
       - -printtoconsole
       - -prune=1000
@@ -22,140 +13,92 @@ services:
       - -rpcbind=0.0.0.0
       - -rpcallowip=0.0.0.0/0
       - -rpcuser=voidrpc
-      - -rpcpassword=${NODE_RPC_PASSWORD:-changeme}
+      - -rpcpassword=voidpoolrpc2024
       - -zmqpubhashblock=tcp://0.0.0.0:28332
       - -zmqpubrawblock=tcp://0.0.0.0:28332
-    expose:
-      - "28332"
     networks:
-      - void_network
-    healthcheck:
-      test: ["CMD-SHELL", "voidcoin-cli -rpcuser=voidrpc -rpcpassword=$$RPC_PASSWORD getblockchaininfo || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 120s
+      - voidcoin_pool
 
   postgres:
     image: timescale/timescaledb:latest-pg15
-    container_name: void-postgres
+    container_name: voidcoin-pool-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: voidpool
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      POSTGRES_PASSWORD: voidpooldb2024
       POSTGRES_DB: voidpool
     volumes:
-      - ${APP_DATA_DIR:-./data}/postgres:/var/lib/postgresql/data
-      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ${APP_DATA_DIR}/postgres:/var/lib/postgresql/data
     networks:
-      - void_network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U voidpool -d voidpool"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+      - voidcoin_pool
 
   redis:
     image: redis:7-alpine
-    container_name: void-redis
+    container_name: voidcoin-pool-redis
     restart: unless-stopped
     volumes:
-      - ${APP_DATA_DIR:-./data}/redis:/data
+      - ${APP_DATA_DIR}/redis:/data
     networks:
-      - void_network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+      - voidcoin_pool
 
   api:
-    image: *api-image
-    container_name: void-api
+    image: ghcr.io/voidhash-crypto/voidcoin-pool-api:latest
+    container_name: voidcoin-pool-api
     restart: unless-stopped
     depends_on:
-      node:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - node
+      - postgres
+      - redis
     environment:
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=voidpool
-      - DB_PASSWORD=${DB_PASSWORD:-changeme}
+      - DB_PASSWORD=voidpooldb2024
       - DB_NAME=voidpool
       - REDIS_URL=redis://redis:6379
       - RPC_HOST=node
       - RPC_PORT=7778
       - RPC_USER=voidrpc
-      - RPC_PASSWORD=${NODE_RPC_PASSWORD:-changeme}
-      - POOL_NAME=${POOL_NAME:-My Void Pool}
-      - POOL_FEE=${POOL_FEE:-1.0}
-      - SOLO_FEE=${SOLO_FEE:-0.5}
-      - POOL_ADDRESS=${POOL_ADDRESS:-}
-      - MIN_PAYOUT=${MIN_PAYOUT:-5}
-    expose:
-      - "8080"
+      - RPC_PASSWORD=voidpoolrpc2024
+      - POOL_NAME=My Void Pool
+      - POOL_FEE=1.0
+      - SOLO_FEE=0.5
+      - MIN_PAYOUT=5
     networks:
-      - void_network
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/api/v1/stats || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+      - voidcoin_pool
 
   stratum:
-    image: *stratum-image
-    container_name: void-stratum
+    image: ghcr.io/voidhash-crypto/voidcoin-pool-stratum:latest
+    container_name: voidcoin-pool-stratum
     restart: unless-stopped
     depends_on:
-      api:
-        condition: service_healthy
+      - api
     ports:
-      - "${STRATUM_PORT:-3333}:3333"
+      - "3333:3333"
     environment:
       - API_URL=http://api:8080
       - RPC_HOST=node
       - RPC_PORT=7778
       - RPC_USER=voidrpc
-      - RPC_PASSWORD=${NODE_RPC_PASSWORD:-changeme}
-      - POOL_ADDRESS=${POOL_ADDRESS:-}
-      - POOL_FEE=${POOL_FEE:-1.0}
+      - RPC_PASSWORD=voidpoolrpc2024
+      - POOL_FEE=1.0
       - ZMQ_ENDPOINT=tcp://node:28332
     networks:
-      - void_network
-    healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 3333 || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
+      - voidcoin_pool
 
   web:
-    image: *web-image
-    container_name: void-web
+    image: ghcr.io/voidhash-crypto/voidcoin-pool-web:latest
+    container_name: voidcoin-pool-web
     restart: unless-stopped
     depends_on:
-      api:
-        condition: service_healthy
+      - api
     ports:
       - "${APP_PORT:-3080}:80"
     environment:
       - API_URL=http://api:8080
     networks:
-      - void_network
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:80/ || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
+      - voidcoin_pool
 
 networks:
-  void_network:
+  voidcoin_pool:
     driver: bridge
